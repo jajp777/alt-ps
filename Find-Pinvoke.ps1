@@ -3,26 +3,33 @@ function Find-Pinvoke {
     .SYNOPSIS
         Finds PInvokes in the specified assembly which has been loaded in
         current AppDomain.
-    .PARAMETER TypeName
-        A public type name, e.g. PSObject.
+    .PARAMETER AssemblyName
+        An assembly name, e.g. System.
     .EXAMPLE
-        PS C:\> Find-Pinvoke Regex
+        PS C:\> Find-Pinvoke System
         Finds information on all the PInvokes in the System.dll assembly.
   #>
   param(
-    [Parameter(Mandatory=$true)]
+    [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [String]$TypeName
+    [String]$AssemblyName = 'CommonLanguageRuntimeLibrary'
   )
   
   begin {
-    if (($base = $TypeName -as [Type]) -eq $null) {
-      Write-Warning "specified type has not been found in current AppDomain."
+    if (!$AssemblyName.EndsWith('.dll')) {
+      $AssemblyName += '.dll'
+    }
+    
+    if (($Assembly = [AppDomain]::CurrentDomain.GetAssemblies() |
+      Where-Object {
+      $_.ManifestModule.ScopeName.Equals($AssemblyName)
+    }) -eq $null) {
+      Write-Warning "the assembly has not been found in current AppDomain."
       break
     }
   }
   process {
-    foreach ($type in $base.Assembly.GetTypes()) {
+    foreach ($type in $Assembly.GetTypes()) {
       $type.GetMethods([Reflection.BindingFlags]60) | ForEach-Object {
         if (($_.Attributes -band 0x2000) -eq 0x2000) {
           $sig = [Reflection.CustomAttributeData]::GetCustomAttributes(
