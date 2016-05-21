@@ -93,10 +93,10 @@ function Invoke-RtlAdjustPrivilege {
   }
   process {
     Get-Delegate ntdll RtlAdjustPrivilege `
-    '[Func[UInt32, Boolean, Boolean, Text.StringBuilder, Int32]]'
+    '[Action[UInt32, Boolean, Boolean, Text.StringBuilder]]'
     $enabled = New-Object Text.StringBuilder
     
-    [void]$RtlAdjustPrivilege.Invoke($Privilege, $Enable, $false, $enabled)
+    $RtlAdjustPrivilege.Invoke($Privilege, $Enable, $false, $enabled)
   }
   end {}
 }
