@@ -4,6 +4,12 @@ function Get-ProcessTree {
       'Microsoft.Win32.NativeMethods'
     ).GetMethod('NtQuerySystemInformation')).Name $$
     
+    $UNICODE_STRING = [Activator]::CreateInstance(
+      [Object].Assembly.GetType(
+        'Microsoft.Win32.Win32Native+UNICODE_STRING'
+      )
+    )
+    
     function Get-ProcessChild {
       param(
         [Parameter(Mandatory=$true, Position=0)]
@@ -16,9 +22,7 @@ function Get-ProcessTree {
       $Processes | Where-Object {
         $_.PPID -eq $Process.PID -and $_.PPID -ne 0
       } | ForEach-Object {
-        '{0}{1} ({2})' -f (
-          "$([Char]32)" * 2 * $depth
-        ), $_.ProcessName, $_.PID
+        "$("$([Char]32)" * 2 * $Depth)$($_.ProcessName) ($($_.PID))"
         Get-ProcessChild $_ (++$Depth)
         $Depth--
       }
@@ -48,13 +52,27 @@ function Get-ProcessTree {
         }
       }
       
+      $len = [Marshal]::SizeOf($UNICODE_STRING) - 1
       $tmp = $ptr
       $Processes = while (($$ = [Marshal]::ReadInt32($tmp))) {
+        [Byte[]]$bytes = 0..$len | ForEach-Object {$ofb = 0x38}{
+          [Marshal]::ReadByte($tmp, $ofb)
+          $ofb++
+        }
+        
+        $gch = [Runtime.InteropServices.GCHandle]::Alloc($bytes, 'Pinned')
+        $uni = [Marshal]::PtrToStructure(
+          $gch.AddrOfPinnedObject(), [Type]$UNICODE_STRING.GetType()
+        )
+        $gch.Free()
+        
         New-Object PSObject -Property @{
-          ProcessName = [Diagnostics.Process]::GetProcessById((
-            $id = [Marshal]::ReadInt32($tmp, 0x44)
-          )).Name
-          PID = $id
+          ProcessName = if ([String]::IsNullOrEmpty((
+            $proc = $uni.GetType().GetField(
+              'Buffer', [Reflection.BindingFlags]36
+            ).GetValue($uni))
+          )) { 'Idle' } else { $proc }
+          PID = [Marshal]::ReadInt32($tmp, 0x44)
           PPID = [Marshal]::ReadInt32($tmp, 0x48)
         }
         $tmp = [IntPtr]($tmp.ToInt32() + $$)
@@ -75,7 +93,7 @@ function Get-ProcessTree {
     $Processes | Where-Object {
       -not (Get-Process -Id $_.PPID -ea 0) -or $_.PPID -eq 0
     } | ForEach-Object {
-      '{0} ({1})' -f $_.ProcessName, $_.PID
+      "$($_.ProcessName) ($($_.PID))"
       Get-ProcessChild $_
     }
     
