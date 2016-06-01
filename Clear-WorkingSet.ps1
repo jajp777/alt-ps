@@ -1,6 +1,6 @@
 function Clear-WorkingSet {
   <#
-    .NOTES
+    .SYNOPSIS
         Sets the minimum working set sizes for the specified process.
   #>
   param(
