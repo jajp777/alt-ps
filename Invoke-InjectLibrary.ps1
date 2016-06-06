@@ -111,7 +111,7 @@ function Invoke-InjectLibrary {
                                                      '[Func[IntPtr, UInt32, UInt32]]'
     $WriteProcessMemory = Set-Delegate $WriteProcessMemory `
                            '[Func[IntPtr, IntPtr, [Byte[]], Int32, IntPtr, Boolean]]'
-    $DllPath = Resolve-Path .\test.dll
+    $DllPath = Resolve-Path $DllPath
     $INFINITE = [BitConverter]::ToUInt32([BitConverter]::GetBytes(0xFFFFFFFF), 0)
   }
   process {
