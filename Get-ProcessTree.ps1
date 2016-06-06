@@ -1,4 +1,8 @@
 function Get-ProcessTree {
+  <#
+    .NOTES
+        This script has been written and tested on Win7 x86.
+  #>
   begin {
     Set-Variable ($$ = [Regex].Assembly.GetType(
       'Microsoft.Win32.NativeMethods'
