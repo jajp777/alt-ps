@@ -89,9 +89,9 @@ function Verb-Noun {
   process {
   }
   end {
-    [void]$ta::Remove('OpCodes')
-    [void]$ta::Remove('HandleRef')
-    [void]$ta::Remove('CallingConvention')
+    'OpCodes', 'HandleRef', 'CallingConvention' | ForEach-Object {
+      [void]$ta::Remove($_)
+    }
   }
 }
 '@
