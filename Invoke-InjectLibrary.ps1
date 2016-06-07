@@ -102,7 +102,7 @@ function Invoke-InjectLibrary {
     $CloseHandle = Set-Delegate $CloseHandle '[Func[IntPtr, Boolean]]'
     $OpenProcess = Set-Delegate $OpenProcess '[Func[UInt32, Boolean, Int32, IntPtr]]'
     $VirtualAllocEx = Set-Delegate $VirtualAllocEx `
-                              '[Func[IntPtr, IntPtr, Int32, UInt32, Uint32, IntPtr]]'
+                              '[Func[IntPtr, IntPtr, Int32, UInt32, UInt32, IntPtr]]'
     $VirtualFreeEx = Set-Delegate $VirtualFreeEx `
                                      '[Func[IntPtr, IntPtr, Int32, UInt32, Boolean]]'
     $CreateRemoteThread = Set-Delegate $CreateRemoteThread `
