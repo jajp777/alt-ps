@@ -26,7 +26,7 @@ function Invoke-InjectLibrary {
       ))::Get.Keys
     }{
       if ($keys -notcontains $_.Name) {
-        $ta::Add($_.name, $_)
+        $ta::Add($_.Name, $_)
       }
     }
     
