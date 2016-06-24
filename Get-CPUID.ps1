@@ -35,41 +35,37 @@ function Get-CPUID {
       $_.Name -cmatch '\AVirtual(Alloc|Free)'
     } | ForEach-Object { Set-Variable $_.Name $_ }
     
-    [Byte[]]$x86 = @(
-      0x55,             #push  ebp
-      0x8B, 0xEC,       #mov   ebp,  esp
-      0x53,             #push  ebx
-      0x57,             #push  edi
-      0x8B, 0x45, 0x08, #mov   eax,  dword ptr[ebp+8]
-      0x0F, 0xA2,       #cpuid
-      0x8B, 0x7D, 0x0C, #mov   edi,  dword ptr[ebp+12]
-      0x89, 0x07,       #mov   dword ptr[edi+0],  eax
-      0x89, 0x5F, 0x04, #mov   dword ptr[edi+4],  ebx
-      0x89, 0x4F, 0x08, #mov   dword ptr[edi+8],  ecx
-      0x89, 0x57, 0x0C, #mov   dword ptr[edi+12], edx
-      0x5F,             #pop   edi
-      0x5B,             #pop   ebx
-      0x8B, 0xE5,       #mov   esp,  ebp
-      0x5D,             #pop   ebp
-      0xC3              #ret
-    )
-    
-    [Byte[]]$x64 = @(
-      0x53,                   #push  rbx
-      0x49, 0x89, 0xD0,       #mov   r8,  rdx
-      0x89, 0xC8,             #mov   eax, ecx
-      0x0F, 0xA2,             #cpuid
-      0x41, 0x89, 0x40, 0x00, #mov   dword ptr[r8+0],  eax
-      0x41, 0x89, 0x58, 0x04, #mov   dword ptr[r8+4],  ebx
-      0x41, 0x89, 0x48, 0x08, #mov   dword ptr[r8+8],  ecx
-      0x41, 0x89, 0x50, 0x0C, #mov   dword ptr[r8+12], edx
-      0x5B,                   #pop   rbx
-      0xC3                    #ret
-    )
-    
     [Byte[]]$bytes = switch ([IntPtr]::Size) {
-      4 { $x86 }
-      8 { $x64 }
+      4 {
+        0x55,                   #push  ebp
+        0x8B, 0xEC,             #mov   ebp,  esp
+        0x53,                   #push  ebx
+        0x57,                   #push  edi
+        0x8B, 0x45, 0x08,       #mov   eax,  dword ptr[ebp+8]
+        0x0F, 0xA2,             #cpuid
+        0x8B, 0x7D, 0x0C,       #mov   edi,  dword ptr[ebp+12]
+        0x89, 0x07,             #mov   dword ptr[edi+0],  eax
+        0x89, 0x5F, 0x04,       #mov   dword ptr[edi+4],  ebx
+        0x89, 0x4F, 0x08,       #mov   dword ptr[edi+8],  ecx
+        0x89, 0x57, 0x0C,       #mov   dword ptr[edi+12], edx
+        0x5F,                   #pop   edi
+        0x5B,                   #pop   ebx
+        0x8B, 0xE5,             #mov   esp,  ebp
+        0x5D,                   #pop   ebp
+        0xC3                    #ret
+      }
+      8 {
+        0x53,                   #push  rbx
+        0x49, 0x89, 0xD0,       #mov   r8,  rdx
+        0x89, 0xC8,             #mov   eax, ecx
+        0x0F, 0xA2,             #cpuid
+        0x41, 0x89, 0x40, 0x00, #mov   dword ptr[r8+0],  eax
+        0x41, 0x89, 0x58, 0x04, #mov   dword ptr[r8+4],  ebx
+        0x41, 0x89, 0x48, 0x08, #mov   dword ptr[r8+8],  ecx
+        0x41, 0x89, 0x50, 0x0C, #mov   dword ptr[r8+12], edx
+        0x5B,                   #pop   rbx
+        0xC3                    #ret
+      }
     }
   }
   process {
@@ -113,7 +109,7 @@ function Get-CPUID {
       $gch.Free()
       
       "$(-join [Char[]]$buf[4..7])$(
-            -join [Char[]]$buf[12..15] #CPUID0
+            -join [Char[]]$buf[12..15]
       )$(-join [Char[]]$buf[8..11])"
     }
     catch { $_.Exception }
