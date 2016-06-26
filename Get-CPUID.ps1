@@ -17,8 +17,8 @@ function Get-CPUID {
     }{
       if ($keys -notcontains $_.Name) {
         $ta::Add($_.Name, $_)
-        $collect += $_.Name
       }
+      $collect += $_.Name
     }
     
     Add-Type -AssemblyName System.ServiceModel
