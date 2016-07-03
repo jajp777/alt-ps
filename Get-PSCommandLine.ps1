@@ -19,10 +19,12 @@ function Get-PSCommandLine {
       $keys = ($ta = [PSObject].Assembly.GetType(
         'System.Management.Automation.TypeAccelerators'
       ))::Get.Keys
+      $collect = @()
     }{
       if ($keys -notcontains $_.Name) {
         $ta::Add($_.Name, $_)
       }
+      $collect += $_.Name
     }
     
     [Regex].Assembly.GetType(
@@ -98,8 +100,6 @@ function Get-PSCommandLine {
       $sph.Close()
     }
     
-    'BindingFlags', 'GCHandle', 'Marshal' | ForEach-Object {
-      [void]$ta::Remove($_)
-    }
+    $collect | ForEach-Object { [void]$ta::Remove($_) }
   }
 }
