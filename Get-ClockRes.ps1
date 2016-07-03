@@ -12,10 +12,12 @@ function Get-ClockRes {
       $keys = ($ta = [PSObject].Assembly.GetType(
         'System.Management.Automation.TypeAccelerators'
       ))::Get.Keys
+      $collect = @()
     }{
       if ($keys -notcontains $_.Name) {
         $ta::Add($_.Name, $_)
       }
+      $collect += $_.Name
     }
     
     function private:Set-Delegate {
@@ -92,8 +94,6 @@ function Get-ClockRes {
     }
   }
   end {
-    'OpCodes', 'HandleRef', 'CallingConvention' | ForEach-Object {
-      [void]$ta::Remove($_)
-    }
+    $collect | ForEach-Object { [void]$ta::Remove($_) }
   }
 }
