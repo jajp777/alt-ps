@@ -18,10 +18,12 @@ function Clear-WorkingSet {
       $keys = ($ta = [PSObject].Assembly.GetType(
         'System.Management.Automation.TypeAccelerators'
       ))::Get.Keys
+      $collect = @()
     }{
       if ($keys -notcontains $_.Name) {
         $ta::Add($_.Name, $_)
       }
+      $collect += $_.Name
     }
     
     function private:Set-Delegate {
@@ -90,8 +92,6 @@ function Clear-WorkingSet {
     $SetProcessWorkingSetSize.Invoke((Get-Process -Id $Id).Handle, -1, -1)
   }
   end {
-    'OpCodes', 'HandleRef', 'CallingConvention' | ForEach-Object {
-      [void]$ta::Remove($_)
-    }
+    $collect | ForEach-Object { [void]$ta::Remove($_) }
   }
 }
