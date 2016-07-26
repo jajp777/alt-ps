@@ -1,3 +1,8 @@
+if (!(Get-Command -CommandType Application mshta.exe -ea 0)) {
+  Write-Warning 'mshta.exe has not been found.'
+  break
+}
+
 mshta ("about:<html>$(ConvertTo-Html -Head @'
 <title>PerformanceMonitor</title>
 <hta:Application ID="PerformanceModinor"
