@@ -95,10 +95,9 @@ function Get-FileCrc32 {
       [Byte[]]$buf = New-Object Byte[] $fs.Length
       [UInt32]$crc = 0
       
-      while (($read = $fs.Read($buf, 0, $buf.Length)) -ne 0) {
-        $crc = $RtlComputeCrc32.Invoke($crc, $buf, $read)
-      }
-      '0x{0:X}' -f $crc
+      '0x{0:X}' -f $RtlComputeCrc32.Invoke($crc, $buf, (
+        $fs.Read($buf, 0, $buf.Length)
+      ))
     }
     catch { $_.Exception }
     finally {
