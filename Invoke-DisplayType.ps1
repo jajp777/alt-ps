@@ -63,10 +63,8 @@ function Invoke-DisplayType {
     }
   }
   process {
-    kd -z $Module -c "dt $BaseName!_$DataType $Arguments;q" -r -snc|
-    Select-String -Pattern "$(if ($DataType.EndsWith('*')) {
-      "\A\s+$BaseName!_"
-    } else {'\+|='} )"
+    kd -z $Module -c "dt $BaseName!_$DataType $Arguments;q" -r -snc |
+    Select-String -Pattern '\A\s+'
   }
   end {}
 }
