@@ -58,20 +58,6 @@ function Test-InternetConnection {
       $collect += $_.Name
     }
     
-    function Get-LastError {
-      param(
-        [Int32]$ErrorCode = [Marshal]::GetLastWin32Error()
-      )
-      
-      [PSObject].Assembly.GetType(
-        'Microsoft.PowerShell.Commands.Internal.Win32Native'
-      ).GetMethod(
-        'GetMessage', [BindingFlags]40
-      ).Invoke(
-        $null, @($ErrorCode)
-      )
-    }
-    
     function private:Set-Delegate {
       param(
         [Parameter(Mandatory=$true, Position=0)]
@@ -88,6 +74,20 @@ function Test-InternetConnection {
       )
       
       begin {
+        function Get-LastError {
+          param(
+            [Int32]$ErrorCode = [Marshal]::GetLastWin32Error()
+          )
+          
+          [PSObject].Assembly.GetType(
+            'Microsoft.PowerShell.Commands.Internal.Win32Native'
+          ).GetMethod(
+            'GetMessage', [BindingFlags]40
+          ).Invoke(
+            $null, @($ErrorCode)
+          )
+        }
+        
         [Regex].Assembly.GetType(
           'Microsoft.Win32.UnsafeNativeMethods'
         ).GetMethods() | Where-Object {
@@ -108,15 +108,16 @@ function Test-InternetConnection {
             Write-Warning "$(Get-LastError)"
             break
           }
-          if (($ptr = $GetProcAddress.Invoke($null, @(
-            [HandleRef](New-Object HandleRef(
-               (New-Object IntPtr),
-               $GetModuleHandle.Invoke($null, @($Module)))
-            ), $Function
-          ))) -eq [IntPtr]::Zero) {
-            Write-Warning "$(Get-LastError)"
-            break
-          }
+        }
+        
+        if (($ptr = $GetProcAddress.Invoke($null, @(
+          [HandleRef](New-Object HandleRef(
+             (New-Object IntPtr),
+             $GetModuleHandle.Invoke($null, @($Module)))
+          ), $Function
+        ))) -eq [IntPtr]::Zero) {
+          Write-Warning "$(Get-LastError)"
+          break
         }
         
         $proto = Invoke-Expression $Delegate
