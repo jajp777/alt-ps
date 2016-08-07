@@ -107,11 +107,11 @@ function Invoke-LostOperator {
       if ($ta) {
         # -shl
         if ($l = [Array]::IndexOf($args, '-shl') + 1) {
-          (Set-ShiftMethod Left).Invoke($args[0], $args[$l])
+          return (Set-ShiftMethod Left).Invoke($args[0], $args[$l])
         }
         # -shr
         if ($l = [Array]::IndexOf($args, '-shr') + 1) {
-          (Set-ShiftMethod Right).Invoke($args[0], $args[$l])
+          return (Set-ShiftMethod Right).Invoke($args[0], $args[$l])
         }
       }
       #ternary operation
