@@ -31,7 +31,7 @@ function Invoke-LostOperator {
         possible issues.
   #>
   begin {
-    if (($maj = $PSVersionTable.PSVersion.Major) -eq 2) {
+    if ($PSVersionTable.PSVersion.Major -eq 2) {
       @(
         [Reflection.Emit.DynamicMethod],
         [Reflection.Emit.OpCodes]
