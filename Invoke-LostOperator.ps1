@@ -29,6 +29,24 @@ function Invoke-LostOperator {
     .NOTES
         This function is experimental that's why there are some
         possible issues.
+        
+        If you wanna get all operators in PowerShell v2 use the
+        next script:
+        
+        if ($PSVersionTable.PSVersion.Major -eq 2) {
+          [PSObject].Assembly.GetType(
+            'System.Management.Automation.OperatorTokenReader'
+          ).GetFields([Reflection.BindingFlags]40) |
+          Where-Object { $_.Name -match 'operators\Z' } |
+          Sort-Object Name | ForEach-Object {
+            Write-Host "$($_.Name.Replace(
+              'Operators', ''
+            )): " -ForegroundColor Green -NoNewLine
+            Write-Host (
+              $_.GetValue($null) -join ', '
+            ) -ForegroundColor Yellow
+          }
+        }
   #>
   begin {
     if ($PSVersionTable.PSVersion.Major -eq 2) {
