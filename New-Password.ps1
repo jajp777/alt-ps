@@ -140,7 +140,7 @@ function New-Password {
       $i++
     }
     if (($err = $NetUserChangePassword.Invoke($p4, $p3, $p1, $p2)) -ne 0) {
-      Write-Warning "could not change password, errror: $('0x{0:X}' -f $err)"
+      Write-Warning "could not change password, error: $('0x{0:X}' -f $err)"
     }
   }
   end {
