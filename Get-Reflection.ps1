@@ -65,7 +65,7 @@ function Get-Reflection {
       
       [AppDomain]::CurrentDomain.GetAssemblies() | Where-Object {
         $_.ManifestModule.ScopeName.Equals($(
-          if ($assembly -eq 'mscorlib') {
+          if ($Assembly -eq 'mscorlib') {
             'CommonLanguageRuntimeLibrary'
           }
           else { "$Assembly.dll" }
