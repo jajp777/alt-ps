@@ -18,7 +18,7 @@ function New-Password {
     [ValidateNotNullOrEmpty()]
     [String]$UserName,
     
-    [Parameter(Position=4)]
+    [Parameter(Position=3)]
     [AllowEmptyString()]
     [String]$Domain = $null
   )
