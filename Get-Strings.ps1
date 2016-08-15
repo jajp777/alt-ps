@@ -34,8 +34,6 @@ function Get-Strings {
   )
   
   begin {
-    $FileName = Resolve-Path $FileName
-    
     $enc = switch ($Unicode) {
       $true  {[Text.Encoding]::Unicode}
       $false {[Text.Encoding]::UTF7}
