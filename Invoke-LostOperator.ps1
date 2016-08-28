@@ -4,35 +4,50 @@ function Invoke-LostOperator {
   <#
     .SYNOPSIS
         Compensates lack of some operators.
+    .DESCRIPTION
+        This function has alias "~!". It seems the best way to warn user about that an
+        operator does not really exist.
     .EXAMPLE
-        PS C:\> Invoke-LostOperator { 1 + 1 }
-        2
+        PS C:\> ~! @(1, 2, 3, 4, 5) -any '($x % 2) -eq 0'
+        True
     .EXAMPLE
-        PS C:\> ~! { 1 + 1 }
-        2
-        
-        Same that's above but shortly.
+        PS C:\> ~! @(2, 4, 6, 8, 10) -all '($x % 2) -eq 0'
+        False
+    .EXAMPLE
+        PS C:\> ~! @('this', 'is', 'array', 1, 2, 3) -first '$x.GetTtpe().Name -eq "Int32"'
+        1
+    .EXAMPLE
+        PS C:\> ~! @('this', 'is', 'array', 1, 2, 3) -last '$x.GetType().Name -eq "String"'
+        array
     .EXAMPLE
         PS C:\> ~! 7 -shl 3
         56
-        
-        Note that shift operations works only in PowerShell v2, on
-        higher version there are native operators -shl and -shr.
     .EXAMPLE
         PS C:\> ~! 7 -shr 1
         3
     .EXAMPLE
-        PS C:\> ~! (100 -lt (Get-ChildItem).Count) ? 'yes' : 'no'
-        no
-        
-        You can also use script blocks in ternary operation.
+        PS C:\> ~! @('this', 'is', 'array', 1, 2, 3) -skip 3
+        1
+        2
+        3
+    .EXAMPLE
+        PS C:\> ~! @('this', 'is', 'array', 1, 2, 3) -take 3
+        this
+        is
+        array
+    .EXAMPLE
+        PS C:\> $x = 10 # do something with this variable
+        PS C:\> ~! ($x -gt 30) ? { $x + 5 } : { $x - 3 }
     .NOTES
-        This function is experimental that's why there are some
-        possible issues.
+        Operators -shl and -shr are not required for usage on PowerShell -ge 3.
         
-        If you wanna get all operators in PowerShell v2 use the
-        next script:
+        Alternative way to simulate a shift method on PowerShell -eq 2:
+        PS C:\> $(cmd /c set /a 7 ^<^< 3);''
+        56
+        PS C:\> $(cmd /c set /a 7 ^>^> 1);''
+        3
         
+        To get all PowerShell -eq 2 operators:
         if ($PSVersionTable.PSVersion.Major -eq 2) {
           [PSObject].Assembly.GetType(
             'System.Management.Automation.OperatorTokenReader'
@@ -65,12 +80,12 @@ function Invoke-LostOperator {
         $collect += $_.Name
       }
       
-      function private:Set-ShiftMethod {
+      function private:Set-Shift {
         param(
           [Parameter(Position=0)]
           [ValidateNotNullOrEmpty()]
           [ValidateSet('Left', 'Right')]
-          [String]$X = 'Left',
+          [String]$Direction = 'Left',
           
           [Parameter(Position=1)]
           [ValidateNotNull()]
@@ -82,11 +97,11 @@ function Invoke-LostOperator {
           'Ldarg_1'
           'Ldc_I4_S, 31'
           'And'
-          $(if ($X -eq 'Right') { 'Shr' } else { 'Shl' })
+          $(if ($Direction -eq 'Right') { 'Shr' } else { 'Shl' })
           'Ret'
         ) | ForEach-Object {
           $def = New-Object DynamicMethod(
-            $X, $Type, @($Type, $Type)
+            $Direction, $Type, @($Type, $Type)
           )
           $il = $def.GetILGenerator()
         }{
@@ -103,7 +118,7 @@ function Invoke-LostOperator {
       }
     }
     
-    function private:eval {
+    function private:Invoke-Eval {
       param(
         [Parameter(Mandatory=$true)]
         [Object]$Object
@@ -118,34 +133,83 @@ function Invoke-LostOperator {
       
       return $null
     }
+    
+    function private:Invoke-Linq {
+      param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Method,
+        
+        [Parameter(Mandatory=$true, Position=1)]
+        [ValidateNotNull()]
+        [Object[]]$Collection,
+        
+        [Parameter(Mandatory=$true, Position=2)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Condition,
+        
+        [Parameter(Position=3)]
+        [Type[]]$Type = [Object]
+      )
+      
+      $m = ([Linq.Enumerable].GetMember(
+        $Method, [Reflection.MemberTypes]8,
+        [Reflection.BindingFlags]24
+      ) | Where-Object {
+        $_.IsGenericMethod -and $_.GetParameters(
+        ).Length -eq 2
+      }).MakeGenericMethod($Type)
+      
+      switch -Regex ($Method) {
+        '\A(Skip|Take)\Z' {
+          $i = 0
+          if (![Int32]::TryParse($Condition, [ref]$i)) {
+            return $null
+          }
+          
+          $m.Invoke($null, @($Collection, $i))
+        }
+        '\A(All|Any|First|Last)\Z' {
+          $e = Invoke-Expression "[Func[$Type, Boolean]]{param(
+            $(([Regex]'\$\w+').Match($Condition).Value)
+          ) $Condition}"
+          
+          $m.Invoke($null, @($Collection, $e))
+        }
+      }
+    }
   }
   process {
     if ($args) {
-      #shifts (only for PowerShell v2)
-      if ($ta) {
-        # -shl
-        if ($l = [Array]::IndexOf($args, '-shl') + 1) {
-          return (Set-ShiftMethod Left).Invoke($args[0], $args[$l])
-        }
-        # -shr
-        if ($l = [Array]::IndexOf($args, '-shr') + 1) {
-          return (Set-ShiftMethod Right).Invoke($args[0], $args[$l])
-        }
-      }
-      #ternary operation
-      if ($l = [Array]::IndexOf($args, '?') + 1) {
-        if (eval($args[0])) {
-          return eval($args[$l])
-        }
-        return eval($args[[Array]::IndexOf($args, ':', $l) + 1])
+      $l = [Array]::IndexOf($args, $args[1]) + 1
+      switch ($args.Length) {
+        3 {
+          switch -Regex ($args[1]) {
+            '\A-(any|all|first|last|skip|take)\Z' {
+              return Invoke-Linq "$([Char]::ToUpper($args[1][1])
+              )$(-join $args[1][2..$args[1].Length])" $args[0] $args[$l]
+            }
+            '\A-sh(l|r)\Z' { # do not use it on PowerShell -ge 3
+              if ($collect) {
+                return (Set-Shift $(switch (
+                  $args[1][-1]) {'l'{'Left'}'r'{'Right'}})
+                ).Invoke($args[0], $args[$l])
+              }
+            }
+          }
+        } # -any, -all, -first, -last, -shl, -shr, -skip and -take
+        5 {
+          if (Invoke-Eval $args[0]) {
+            return Invoke-Eval $args[$l]
+          }
+          return Invoke-Eval ($args[[Array]::IndexOf($args, ':', $l) + 1])
+        } # ternary
       }
       
-      return eval($args[0])
+      return Invoke-Eval $args[0]
     }
   }
   end {
-    if ($ta) {
-      $collect | ForEach-Object { [void]$ta::Remove($_) }
-    }
+    if ($collect) { $collect | ForEach-Object { [void]$ta::Remove($_) } }
   }
 }
