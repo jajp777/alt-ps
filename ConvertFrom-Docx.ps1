@@ -77,10 +77,7 @@ function ConvertFrom-Docx {
             $xml = [xml][Text.Encoding]::UTF8.GetString($buf)
           }
           finally {
-            if ($ds) {
-              $ds.Dispose()
-              $ds.Close()
-            }
+            if ($ds) { $ds.Dispose() }
           }
           
           break # that's done!
@@ -91,10 +88,7 @@ function ConvertFrom-Docx {
     }
     finally {
       if ($br) { $br.Close() }
-      if ($fs) {
-        $fs.Dispose()
-        $fs.Close()
-      }
+      if ($fs) { $fs.Dispose() }
     }
   }
   end {
