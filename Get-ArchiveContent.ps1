@@ -131,11 +131,7 @@ function Get-ArchiveContent {
     }
     finally {
       if ($br) { $br.Close() }
-      
-      if ($fs) {
-        $fs.Dispose()
-        $fs.Close()
-      }
+      if ($fs) { $fs.Dispose() }
     }
   }
   end {}
