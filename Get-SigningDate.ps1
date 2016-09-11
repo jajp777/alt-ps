@@ -150,6 +150,5 @@ function Get-SigningDate {
       }
     }
   }
-  end {
-  }
+  end {}
 }
