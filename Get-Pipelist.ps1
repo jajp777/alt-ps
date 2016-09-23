@@ -138,7 +138,7 @@ function Get-Pipelist {
           # FileNameLength  - offset 0x3c
           $fnl = [Runtime.InteropServices.Marshal]::ReadInt32($tmp, 0x3c)
           # FileName        - offset 0x40
-          $mov = switch ([IntPtr]::Size) { 4 {$tmp.ToInt32()} 8 {$tmp.ToInt64()}}
+          $mov = switch ([IntPtr]::Size) { 4 {$tmp.ToInt32()} 8 {$tmp.ToInt64()} }
           
           New-Object PSObject -Property @{
             PipeName = [Runtime.InteropServices.Marshal]::PtrToStringUni(
@@ -153,7 +153,7 @@ function Get-Pipelist {
         $query = $false
       }) | Select-Object PipeName, Instances, MaxInstances
     }
-    catch { $_ }
+    catch { $_.Message }
     finally {
       if ($dir) { [Runtime.InteropServices.Marshal]::FreeHGlobal($dir) }
       if ($pipes) { $pipes.Dispose() }
