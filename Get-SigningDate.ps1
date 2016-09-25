@@ -51,6 +51,7 @@ function Get-SigningDate {
           )).DefineDynamicModule('PSCryptApi', $false)
           
           Set-Variable PSCryptApi -Value $mb -Option Constant -Scope Global -Visibility Private
+          $mb
         }
         else { $m.Value }
       }
