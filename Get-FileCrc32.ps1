@@ -101,10 +101,7 @@ function Get-FileCrc32 {
     }
     catch { $_.Exception }
     finally {
-      if ($fs -ne $null) {
-        $fs.Dispose()
-        $fs.Close()
-      }
+      if ($fs) { $fs.Dispose() }
     }
   }
   end {
