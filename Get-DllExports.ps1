@@ -105,11 +105,7 @@ function Get-DllExports {
       catch { $_.Exception }
       finally {
         if ($br -ne $null) { $br.Close() }
-        
-        if ($fs -ne $null) {
-          $fs.Dispose()
-          $fs.Close()
-        }
+        if ($fs -ne $null) { $fs.Dispose() }
       }
     }
     #locate and load latest Microsoft.Build.Tasks assembly
