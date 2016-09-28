@@ -98,8 +98,8 @@ function Get-DisplayDevices {
     }
   }
   process {
-    $ddw = New-Object Byte[] 840 # sizeof(DISPLAY_DEVICEW) = 840
-    # set cb field with 840
+    $ddw = New-Object Byte[] 840 # DISPLAY_DEVICEW
+    # set size of the DISPLAY_DEVICE structure
     $ddw[0] = [Byte]0x48
     $ddw[1] = [Byte]0x3
     
@@ -111,9 +111,7 @@ function Get-DisplayDevices {
         StateFlags = $(
           $f = [BitConverter]::ToUInt32($ddw[324..327], 0)
           foreach ($key in $STATE_FLAGS.Keys) {
-            if (($f -band $STATE_FLAGS[$key]) -eq $STATE_FLAGS[$key]) {
-              $key
-            }
+            if (($f -band $STATE_FLAGS[$key]) -eq $STATE_FLAGS[$key]) { $key }
           }
         )
         DeviceId = [Text.Encoding]::Unicode.GetString($ddw[328..455])
