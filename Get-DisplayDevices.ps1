@@ -99,7 +99,7 @@ function Get-DisplayDevices {
   }
   process {
     $ddw = New-Object Byte[] 840 # DISPLAY_DEVICEW
-    # set size of the DISPLAY_DEVICE structure
+    # set size of the DISPLAY_DEVICEW structure
     $ddw[0] = [Byte]0x48
     $ddw[1] = [Byte]0x3
     
