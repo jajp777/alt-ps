@@ -174,7 +174,7 @@ function Get-Streams {
         $tmp = [IntPtr]($mov + $neo)
       }
     }
-    catch { $_ }
+    catch {}
     finally {
       if ($fsi) { [Runtime.InteropServices.Marshal]::FreeHGlobal($fsi) }
       if ($hndl) {
