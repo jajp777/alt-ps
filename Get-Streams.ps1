@@ -161,11 +161,13 @@ function Get-Streams {
           }
           
           New-Object PSObject -Property @{
-            Name = $itm
+            Path = $fi.FullName
+            IsFile = !$fi.PSIsContainer
+            Stream = $itm
             Size = $ssz
             AllocationSize = $sas
             Deleted = $del
-          } | Select-Object Name, Size, AllocationSize, Deleted
+          } | Select-Object Path, IsFile, Stream, Size, AllocationSize, Deleted
         }
         
         if ($neo -eq 0) { break }
