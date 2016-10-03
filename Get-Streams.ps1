@@ -15,7 +15,7 @@ function Get-Streams {
   #>
   param(
     [Parameter(Mandatory=$true, Position=0)]
-    [ValidateScript({($script:fi = Get-Item $_ -ea 0)})]
+    [ValidateScript({($script:fi = Get-Item $_)})]
     [String]$Path,
     
     [Parameter(Position=1)]
