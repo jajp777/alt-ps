@@ -2,7 +2,9 @@
 function Get-ProcessOwner {
   <#
     .SYNOPSIS
-        Retrieves owner of the specified process..
+        Retrieves owner of the specified process.
+    .NOTES
+        .NET Framework 4.5.2 is required.
   #>
   param(
     [Parameter(Mandatory=$true)]
