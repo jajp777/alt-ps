@@ -8,7 +8,7 @@ function Get-ProcessOwner {
   #>
   param(
     [Parameter(Mandatory=$true)]
-    [ValidateScript({($script:proc = Get-Process -Id $_) -ne 0})]
+    [ValidateScript({($script:proc = Get-Process -Id $_ -ea 0) -ne 0})]
     [Int32]$Id
   )
   
