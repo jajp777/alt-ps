@@ -118,24 +118,13 @@ function Get-VolumeInfo {
     } | Where-Object {$_.Name -ne $d}).Name
     
     try {
-      if (($sfh = [Object].Assembly.GetType(
-        'Microsoft.Win32.Win32Native'
-      ).GetMethod(
-        'CreateFile', [Reflection.BindingFlags]40
-      ).Invoke($null, @(
-        $fi.Fullname, 0x80000000, [IO.FileShare]::Read, $null,
-        [IO.FileMode]::Open, 0, [IntPtr]::Zero
-      ))).IsInvalid) {
-        throw New-Object ComponentModel.Win32Exception(
-          [Runtime.InteropServices.Marshal]::GetLastWin32Error()
-        )
-      }
+      $fs = [IO.File]::OpenRead($fi.FullName)
       
       $isb = New-Object Byte[]([IntPtr]::Size)
       $fvi = [Runtime.InteropServices.Marshal]::AllocHGlobal(24)
       
       if ($NtQueryVolumeInformationFile.Invoke(
-        $sfh.DangerousGetHandle(), $isb, $fvi, 24, 1
+        $fs.Handle, $isb, $fvi, 24, 1
       ) -ne 0) {
         throw New-Object InvalidOperationException(
           'Could not retrieve volume information.'
@@ -158,7 +147,7 @@ function Get-VolumeInfo {
     catch { $_.Exception }
     finally {
       if ($fvi) { [Runtime.InteropServices.Marshal]::FreeHGlobal($fvi) }
-      if ($sfh) { $sfh.Dispose() }
+      if ($fs) { $fs.Dispose() }
     }
   }
   end {}
