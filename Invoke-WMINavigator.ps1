@@ -120,7 +120,7 @@ function Invoke-WMINavigator {
         $rtbDesc.SelectionFont = $fnt1
         $rtbDesc.AppendText("$($lvList1.Items[$i].Text)`n$(('-' * 100))`n")
         
-        $wmi = (New-Object Management.ManagementClass($path, $obj)).PSBase
+        $wmi = New-Object Management.ManagementClass($path, $obj)
         $wmi.Qualifiers.ForEach{
           $itm = $lvList2.Items.Add($_.Name, 2)
           if ($_.Name -match 'Description') {
@@ -171,7 +171,7 @@ function Invoke-WMINavigator {
       $script:cur = "root\$($tvRoots.SelectedNode.FullPath)"
       
       (New-Object Management.ManagementClass($cur, $obj)
-      ).PSBase.GetSubclasses($enm).ForEach{
+      ).GetSubclasses($enm).ForEach{
         $lvList1.Items.Add($_.Name, 1)
       }
       
