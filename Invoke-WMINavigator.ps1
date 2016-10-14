@@ -44,7 +44,7 @@ function Invoke-WMINavigator {
   function Get-NameSpaces([String]$root) {
     (New-Object Management.ManagementClass(
       $root, [Management.ManagementPath]'__NAMESPACE', $null
-    )).PSBase.GetInstances().ForEach{
+    )).GetInstances().ForEach{
       (New-Object Windows.Forms.TreeNode).Nodes.Add($_.Name)
     }
   }
@@ -72,7 +72,7 @@ function Invoke-WMINavigator {
       $ret = $(switch ($bool) {
         $true  { [Management.MethodData]$object }
         $false { [Management.PropertyData]$object }
-      }).PSBase.Qualifiers['Description'].Value
+      }).Qualifiers['Description'].Value
       $ret = "$(if (![String]::IsNullOrEmpty($ret)) {$ret} else {'n\a'})`n`n"
     }
     catch {}
