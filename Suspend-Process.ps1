@@ -5,7 +5,7 @@ function Suspend-Process {
   #>
   param(
     [Parameter(Mandatory=$true)]
-    [ValidateScript({($script:proc = Get-Process -Id $_ -ea 0) -ne 0})]
+    [ValidateScript({($script:proc = Get-Process -Id $_)})]
     [Int32]$Id
   )
   
@@ -44,7 +44,7 @@ function Suspend-Process {
             'PowerShellDllImport'
         ))) {
           $mb = ([AppDomain]::CurrentDomain.DefineDynamicAssembly(
-            (New-Object reflection.AssemblyName('PowerShellDllImport')), 'Run'
+            (New-Object Reflection.AssemblyName('PowerShellDllImport')), 'Run'
           )).DefineDynamicModule('PowerShellDllImport', $false)
           
           Set-Variable PowerShellDllImport -Value $mb -Option Constant `
