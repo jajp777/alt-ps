@@ -45,10 +45,12 @@ function Get-SigningDate {
       )
       
       begin {
-        $mod = if (!($m = $ExecutionContext.SessionState.PSVariable.Get('PSCryptApi'))) {
+        $mod = if (!($m = $ExecutionContext.SessionState.PSVariable.Get(
+            'PowerShellDllImport'
+        ))) {
           $mb = ([AppDomain]::CurrentDomain.DefineDynamicAssembly(
-            (New-Object Reflection.AssemblyName('PSCryptApi')), 'Run'
-          )).DefineDynamicModule('PSCryptApi', $false)
+            (New-Object Reflection.AssemblyName('PowerShellDllImport')), 'Run'
+          )).DefineDynamicModule('PowerShellDllImport', $false)
           
           Set-Variable PSCryptApi -Value $mb -Option Constant -Scope Global -Visibility Private
           $mb
