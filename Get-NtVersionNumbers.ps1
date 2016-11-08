@@ -2,8 +2,9 @@ function Get-NtVersionNumbers {
   <#
     .SYNOPSIS
         Gets the version numbers of the run time library.
+    .NOTES
+        Same that OS version.
   #>
-  
   begin {
     @(
       [Runtime.InteropServices.CallingConvention],
@@ -84,9 +85,14 @@ function Get-NtVersionNumbers {
                                           '[Action[[Byte[]], [Byte[]], [Byte[]]]]'
   }
   process {
-    $maj, $min = [Byte[]]@(0, 0, 0, 0), [Byte[]]@(0, 0, 0, 0)
-    $RtlGetNtVersionNumbers.Invoke($maj, $min, $null)
-    ($maj, $min | ForEach-Object { [BitConverter]::ToUInt32($_, 0) }) -join '.'
+    'maj', 'min', 'bld' | ForEach-Object {
+      Set-Variable $_ ([Byte[]]@(0, 0, 0, 0))
+    }
+    $RtlGetNtVersionNumbers.Invoke($maj, $min, $bld)
+    $maj, $min, $bld = $maj, $min, $bld | ForEach-Object {
+      [BitConverter]::ToUInt32($_, 0)
+    }
+    ($maj, $min, ($bld -band 0xFFFF)) -join '.'
   }
   end {
     $collect | ForEach-Object { [void]$ta::Remove($_) }
