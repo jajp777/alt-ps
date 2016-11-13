@@ -71,10 +71,10 @@ function Hide-ConsoleCursor {
     }
     
     $ShowConsoleCursor = New-Delegate kernel32 ShowConsoleCursor `
-                                            '[Func[IntPtr, Boolean, Int32]]'
+                                                '[Action[IntPtr, Boolean]]'
   }
   process {
-    [void]$ShowConsoleCursor.Invoke(
+    $ShowConsoleCursor.Invoke(
       ([Object].Assembly.GetType(
         'Microsoft.Win32.Win32Native'
       ).GetMethod(
