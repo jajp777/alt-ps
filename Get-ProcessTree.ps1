@@ -1,8 +1,4 @@
 function Get-ProcessTree {
-  <#
-    .NOTES
-        This script has been written and tested on Win7 x86.
-  #>
   begin {
     Set-Variable ($$ = [Regex].Assembly.GetType(
       'Microsoft.Win32.NativeMethods'
@@ -32,20 +28,27 @@ function Get-ProcessTree {
       }
     }
     
-    if (($ta = [PSObject].Assembly.GetType(
-      'System.Management.Automation.TypeAccelerators'
-    ))::Get.Keys -notcontains 'Marshal') {
-      $ta::Add('Marshal', [Runtime.InteropServices.Marshal])
+    @(
+      [Runtime.InteropServices.GCHandle],
+      [Runtime.InteropServices.Marshal],
+      [Reflection.BindingFlags]
+    ) | ForEach-Object {
+      $keys = ($ta = [PSObject].Assembly.GetType(
+        'System.Management.Automation.TypeAccelerators'
+      ))::Get.Keys
+      $collect = @()
+    }{
+      if ($keys -notcontains $_.Name) { $ta::Add($_.Name, $_) }
+      $collect += $_.Name
     }
   }
   process {
     try {
-      $ret = 0
-      $ptr = [Marshal]::AllocHGlobal(1024)
+      $ptr, $ret = [Marshal]::AllocHGlobal(1024), 0
       
       if ($NtQuerySystemInformation.Invoke($null, (
         $par = [Object[]]@(5, $ptr, 1024, $ret)
-      )) -eq 0xC0000004) { #STATUS_INFO_LENGTH_MISMATCH
+      )) -eq 0xC0000004) { # STATUS_INFO_LENGTH_MISMATCH
         $ptr = [Marshal]::ReAllocHGlobal($ptr, [IntPtr]$par[3])
         if (($nts = $NtQuerySystemInformation.Invoke($null, (
           $par = [Object[]]@(5, $ptr, $par[3], 0)
@@ -64,7 +67,7 @@ function Get-ProcessTree {
           $ofb++
         }
         
-        $gch = [Runtime.InteropServices.GCHandle]::Alloc($bytes, 'Pinned')
+        $gch = [GCHandle]::Alloc($bytes, 'Pinned')
         $uni = [Marshal]::PtrToStructure(
           $gch.AddrOfPinnedObject(), [Type]$UNICODE_STRING.GetType()
         )
@@ -73,27 +76,30 @@ function Get-ProcessTree {
         New-Object PSObject -Property @{
           ProcessName = if ([String]::IsNullOrEmpty((
             $proc = $uni.GetType().GetField(
-              'Buffer', [Reflection.BindingFlags]36
+              'Buffer', [BindingFlags]36
             ).GetValue($uni))
           )) { 'Idle' } else { $proc }
-          PID = [Marshal]::ReadInt32($tmp, 0x44)
-          PPID = [Marshal]::ReadInt32($tmp, 0x48)
+          PID = switch ([IntPtr]::Size) {
+            4 { [Marshal]::ReadIntPtr($tmp, 0x44).ToInt32() }
+            8 { [Marshal]::ReadIntPtr($tmp, 0x50).ToInt64() }
+          }
+          PPID = switch ([IntPtr]::Size) {
+            4 { [Marshal]::ReadIntPtr($tmp, 0x48).ToInt32() }
+            8 { [Marshal]::ReadIntPtr($tmp, 0x58).ToInt64() }
+          }
         }
-        $tmp = [IntPtr]($tmp.ToInt32() + $$)
+        
+        $tmp = [IntPtr]($(switch ([IntPtr]::Size) {
+          4 { $tmp.ToInt32() } 8 { $tmp.ToInt64() }
+        }) + $$)
       }
     }
-    catch { $_.Exception }
+    catch { $_ }
     finally {
-      if ($ptr -ne $null) {
-        [Marshal]::FreeHGlobal($ptr)
-      }
+      if ($ptr) { [Marshal]::FreeHGlobal($ptr) }
     }
   }
   end {
-    if ($Processes -eq $null) {
-      break
-    }
-    
     $Processes | Where-Object {
       -not (Get-Process -Id $_.PPID -ea 0) -or $_.PPID -eq 0
     } | ForEach-Object {
@@ -101,6 +107,6 @@ function Get-ProcessTree {
       Get-ProcessChild $_
     }
     
-    [void]$ta::Remove('Marshal')
+    $collect | ForEach-Object { [void]$ta::Remove($_) }
   }
 }
