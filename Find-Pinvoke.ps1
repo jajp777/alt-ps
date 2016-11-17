@@ -16,7 +16,7 @@ function Find-Pinvoke {
   )
   
   begin {
-    if (!$AssemblyName.EndsWith('.dll')) {
+    if (!$AssemblyName.EndsWith('.dll') -and $AssemblyName -ne 'CommonLanguageRuntimeLibrary') {
       $AssemblyName += '.dll'
     }
     
