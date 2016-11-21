@@ -240,7 +240,7 @@ function Get-CpuId {
         
         $func.Invoke(
           $ptr, [Action[Int32, [Byte[]]]], 'Cdecl'
-        ).Invoke($Level, $Bytes)
+        )[0].Invoke($Level, $Bytes)
       }
       
       [Marshal]::Copy($bytes, 0, $ptr, $bytes.Length)
