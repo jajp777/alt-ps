@@ -66,12 +66,8 @@ function Get-Strings {
     }
     catch { $_.Exception }
     finally {
-      if ($fs) {
-        $fs.Dispose()
-        $fs.Close()
-      }
+      if ($fs) { $fs.Dispose() }
     }
   }
-  end {
-  }
+  end {}
 }
