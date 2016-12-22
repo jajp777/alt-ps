@@ -135,9 +135,9 @@ function Get-ClockRes {
   'max', 'min', 'cur' | ForEach-Object {
     Set-Variable $_ ([Byte[]]@(0, 0, 0, 0))
   }
-  if (($nts = $ntdll.NtQueryTimerResolution.Invoke(
+  if ($ntdll.NtQueryTimerResolution.Invoke(
     $max, $min, $cur
-  )) -ne 0) {
+  ) -ne 0) {
     throw New-Object InvalidOperationException(
       'Could not retrieve system clock resolution.'
     )
