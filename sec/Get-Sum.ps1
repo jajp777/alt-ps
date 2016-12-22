@@ -123,6 +123,7 @@ function Get-Sum {
   <#
     .NOTES
         Author: greg zakharov
+        Requirements: CLR v4
   #>
   [CmdletBinding(DefaultParameterSetName='Path')]
   param(
