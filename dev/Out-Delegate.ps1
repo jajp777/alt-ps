@@ -5,7 +5,7 @@ function Out-Delegate {
         or Action delegates.
     .NOTES
         Author: greg zakharov
-        Requirements: CLR v4
+        Requirements: CLR v4#
   #>
   param(
     [Parameter(Mandatory=$true, Position=0)]
