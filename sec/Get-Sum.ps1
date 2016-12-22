@@ -120,6 +120,10 @@ function New-Delegate {
 # endregion
 
 function Get-Sum {
+  <#
+    .NOTES
+        Author: greg zakharov
+  #>
   [CmdletBinding(DefaultParameterSetName='Path')]
   param(
     [Parameter(Mandatory=$true,
