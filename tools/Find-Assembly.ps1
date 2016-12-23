@@ -3,9 +3,11 @@ function Find-Assembly {
     .SYNOPSIS
         Locates an assembly in global assembly cache.
     .DESCRIPTION
-        If no assembly has been specified then the
-        functions returns all assemblies deployed
+        If no assembly name has been specified then
+        the function returns all assemblies deployed
         in global assembly cache.
+    .NOTES
+        Author: greg zakharov
   #>
   param(
     [Parameter(ValueFromPipeline=$true)]
@@ -15,16 +17,11 @@ function Find-Assembly {
   $al = New-Object Collections.ArrayList
   [Object].Assembly.GetType(
     'Microsoft.Win32.Fusion'
-  ).GetMethod(
-    'ReadCache'
-  ).Invoke($null, @(
+  ).GetMethod('ReadCache').Invoke($null, @(
     [Collections.ArrayList]$al,
-    $(if ([String]::IsNullOrEmpty($AssemblyName)) {
-      $null         #all assemblies will be printed
-    }
-    else {
-      $AssemblyName #only specified assembly
-    }),
+    $(if ([String]::IsNullOrEmpty(
+      $AssemblyName
+    )) { $null } else { $AssemblyName }),
     [UInt32]2
   ))
   $al
