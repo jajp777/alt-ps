@@ -3,6 +3,8 @@ function Update-Sysinternals {
   <#
     .SYNOPSIS
         Keeps Sysinternals tools in actual state.
+    .NOTES
+        Author: greg zakharov
   #>
   param(
     [Parameter(Mandatory=$true)]
