@@ -5,6 +5,8 @@ function Clear-ShimCache {
     .DESCRIPTION
         The data of cache is stored in the registry by path
         HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\AppCompatibility
+    .NOTES
+        Author: greg zakharov
   #>
   
   if ((New-Object Security.Principal.WindowsPrincipal(
