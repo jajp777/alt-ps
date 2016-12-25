@@ -2,7 +2,7 @@ function Get-MemoryStatus {
   <#
     .SYNOPSIS
         Retrieves information about the system's current usage of
-        both physical and virtual memory._
+        both physical and virtual memory.
     .NOTES
         Author: greg zakharov
   #>
