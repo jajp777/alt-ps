@@ -40,7 +40,5 @@ function Find-HostOutput {
       [HandleRef]$href, 0x0111, [IntPtr]0xfff4, [IntPtr]::Zero
     ))
   }
-  end {
-    [void]$ta::Remove('HandleRef')
-  }
+  end { [void]$ta::Remove('HandleRef') }
 }
