@@ -14,6 +14,8 @@ function Find-HostOutput {
            0xfff2 => "Mark"
            0xfff3 => "Scroll"
            0xfff5 => "Select All"
+        
+        Author: greg zakharov
   #>
   begin {
     if (($ta = ($asm = [PSObject].Assembly).GetType(
