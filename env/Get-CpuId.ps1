@@ -2,6 +2,8 @@ function Get-CpuId {
   <#
     .SYNOPSIS
         Queries the CPU for information about its type.
+    .NOTES
+        Author: greg zakharov
   #>
   begin {
     @(
