@@ -1,4 +1,8 @@
 function Get-Calendar {
+  <#
+    .NOTES
+        Author: greg zakharov
+  #>
   param(
     [Parameter(Position=0)]
     [Alias('m')]
