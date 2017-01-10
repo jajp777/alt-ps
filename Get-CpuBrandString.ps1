@@ -2,6 +2,8 @@ function Get-CPUBrandString {
   <#
     .SYNOPSIS
         Gets CPU brand string via NtQuerySystemInformation.
+    .NOTES
+        Author: greg zakharov
   #>
   begin {
     if ([Environment]::OSVersion.Version.Major -lt 6) {
