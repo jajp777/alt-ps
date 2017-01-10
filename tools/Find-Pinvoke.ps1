@@ -8,6 +8,8 @@ function Find-Pinvoke {
     .EXAMPLE
         PS C:\> Find-Pinvoke System
         Finds information on all the PInvokes in the System.dll assembly.
+    .NOTES
+        Author: greg zakharov
   #>
   param(
     [Parameter()]
