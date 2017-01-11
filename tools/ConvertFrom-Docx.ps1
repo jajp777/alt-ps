@@ -6,7 +6,7 @@ function ConvertFrom-Docx {
         This function is provided AS IS since it does not provide specific
         checks such as file format, compression and etc.
     .EXAMPLE
-        PS C:\> Get-ArchiveContent \doc\pecoff_v83.docx
+        PS C:\> Get-ZipContent \doc\pecoff_v83.docx
         
         DateTime           Attributes    Size Compressed Name
         --------           ----------    ---- ---------- ----
@@ -42,7 +42,7 @@ function ConvertFrom-Docx {
         PS C:\> ConvertFrom-Docx \doc\pecoff_v83.docx
         ...
     .NOTES
-        Get-ArchiveContent (https://github.com/gregzakh/alt-ps/blob/master/Get-ArchiveContent.ps1)
+        Author: greg zakharov
   #>
   param(
     [Parameter(Mandatory=$true)]
