@@ -1,4 +1,4 @@
-function Get-PublicKey {
+function Get-SIVTKey {
   <#
     .SYNOPSIS
         Extracts the public key of VirusTotal service
@@ -11,6 +11,8 @@ function Get-PublicKey {
         automatic commenrs on URLs and files without
         the need of using HTML website interface.
     .EXAMPLE
+        Author: greg zakharov
+
         function Add-Comment {
           param(
             [Parameter(Mandatory=$true, Position=0)]
@@ -23,7 +25,7 @@ function Get-PublicKey {
           )
           
           begin {
-            if (!($key = Get-PublicKey)) {
+            if (!($key = Get-SIVTKey)) {
               Write-Error 'unable get public key.'
               return
             }
