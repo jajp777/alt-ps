@@ -1,7 +1,9 @@
-function Get-ArchiveContent {
+function Get-ZipContent {
   <#
     .SYNOPSIS
         Gets content of a compressed (zip) file.
+    .NOTES
+        Author: greg zakharov
   #>
   param(
     [Parameter(Mandatory=$true)]
@@ -102,7 +104,7 @@ function Get-ArchiveContent {
       $fs.Position = $br.ReadUInt32()
       
       $(while ($true) {
-        if ($br.ReadUint32() -ne $cdf) { break }
+        if ($br.ReadUInt32() -ne $cdf) { break }
         
         $fs.Position += 8
         $time, $date = $br.ReadUInt16(), $br.ReadUInt16()
