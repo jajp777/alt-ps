@@ -4,6 +4,8 @@ function Out-Minidump {
         Creates a minidump of a process.
     .EXAMPLE
         PS C:\> Out-Minidump 700 -DumpType 2
+    .NOTES
+        Author: greg zakharov
   #>
   param(
     [Parameter(Mandatory=$true, Position=0)]
