@@ -1,19 +1,9 @@
-function Get-SystemPageFiles {
+function Get-PageFiles {
   <#
     .SYNOPSIS
         Gets list of the system page files.
     .NOTES
-        #define SystemPageFileInformation 18
-        
-        typedef struct _SYSTEM_PAGEFILE_INFORMATION {
-            ULONG NextEntryOffset;
-            ULONG TotalSize;
-            ULONG TotalInUse;
-            ULONG PeakUsage;
-            UNICODE_STRING PageFileName;
-        } SYSTEM_PAGEFILE_INFORMATION, *PSYSTEM_PAGEFILE_INFORMATION;
-        
-        sizeof(SYSTEM_PAGEFILE_INFORMATION) = 0x18
+        Author: greg zakharov
   #>
   begin {
     @(
@@ -56,7 +46,7 @@ function Get-SystemPageFiles {
       $len = [Marshal]::SizeOf($UNICODE_STRING) - 1
       $tmp = $ptr
       do {
-        $neo = [Marshal]::ReadInt32($tmp) #NextEntryOffset
+        $neo = [Marshal]::ReadInt32($tmp) # NextEntryOffset
         [Byte[]]$bytes = 0..$len | ForEach-Object {$ofb = 0x10}{
           [Marshal]::ReadByte($tmp, $ofb)
           $ofb++
@@ -75,7 +65,7 @@ function Get-SystemPageFiles {
         $tmp = [IntPtr]($tmp.ToInt32() + $neo)
       } while ($neo)
     }
-    catch { $_.Exception }
+    catch { Write-Verbose $_ }
     finally {
       if ($ptr -ne $null) {
         [Marshal]::FreeHGlobal($ptr)
