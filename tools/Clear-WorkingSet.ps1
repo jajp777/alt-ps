@@ -1,17 +1,3 @@
-function Out-Template {
-  param(
-    [Parameter(Mandatory=$true, Position=0)]
-    [ValidateNotNullOrEmpty()]
-    [String]$Verb,
-    
-    [Parameter(Mandatory=$true, Position=1)]
-    [ValidateNotNullOrEmpty()]
-    [String]$Noun,
-    
-    [Parameter()][String]$Path = $PWD
-  )
-
-$code = @'
 function Import-FromDll {
   <#
     .SYNOPSIS
@@ -161,13 +147,24 @@ function Import-FromDll {
   }
 }
 
-function Verb-Noun {
-  param()
-  
-  <# place your code here #>
-}
-'@
-  
-  $code = ($code -creplace 'Verb', $Verb) -creplace 'Noun', $Noun
-  Out-File "$Path\$Verb-$Noun.ps1" -InputObject $code -Encoding Default
+function Clear-WorkingSet {
+  <#
+    .SYNOPSIS
+        Sets the minimum working set size for the specified process.
+    .NOTES
+        Author: greg zakharov
+        Requirements: CLR v4
+  #>
+  [OutputType([Boolean])]
+  param(
+    [Parameter(Mandatory=$true)]
+    [ValidateScript({($script:proc = Get-Process -Id $_ -ea 0) -ne $null})]
+    [Int32]$Id
+  )
+
+  $kernel32 = Import-FromDll kernel32 -Signature @{
+    SetProcessWorkingSetSize = [Func[IntPtr, Int32, Int32, Boolean]]
+  }
+
+  $kernel32.SetProcessWorkingSetSize.Invoke($proc.Handle, -1, -1)
 }
