@@ -2,6 +2,8 @@ function Get-GACPath {
   <#
     .SYNOPSIS
         Locates GAC path.
+    .NOTES
+        Author: greg zakharov
   #>
   begin {
     $al = New-Object Collections.ArrayList
@@ -11,24 +13,24 @@ function Get-GACPath {
     ).GetMethod(
       'ReadCache'
     ).Invoke($null, @(
-      [Collections.ArrayList]$al, $null, [UInt32]3
+      [Collections.ArrayList]$al, $null, [UInt32]2
     ))
     
-    Add-Type -AssemblyName ($$ = ($al | Where-Object {
+    Add-Type -AssemblyName ($asm = ($al | Where-Object {
       $_ -cmatch '(?=Microsoft.Build.Tasks)(?!.*(?>resources))'
-    })[-1].Split(',')[0])
+    })[-1])
     
     $asm = [AppDomain]::CurrentDomain.GetAssemblies() |
-    Where-Object { $_.ManifestModule.ScopeName.Equals("$$.dll") }
+    Where-Object { $_.ManifestModule.ScopeName.Equals(
+      "$($asm.Split(',')[0]).dll"
+    ) }
   }
   process {}
   end {
-    ($$ = $asm.GetType(
+    Split-Path ($asm.GetType(
       'Microsoft.Build.Tasks.GlobalAssemblyCache'
     ).GetMethod(
       'GetGacPath', [Reflection.BindingFlags]40
-    ).Invoke($null, @())).Substring(
-      0, $$.LastIndexOf('\')
-    )
+    ).Invoke($null, @()))
   }
 }
