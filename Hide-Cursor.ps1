@@ -1,9 +1,11 @@
-function Hide-ConsoleCursor {
+function Hide-Cursor {
   <#
     .SYNOPSIS
         Makes mouse cursor [in]visible in console window.
+    .NOTES
+        Author: greg zakharov
   #>
-  param([Switch]$Show)
+  param([Switch]$Cancel)
   
   begin {
     function private:New-Delegate {
@@ -17,8 +19,8 @@ function Hide-ConsoleCursor {
         [String]$Function,
         
         [Parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]
-        [String]$Delegate
+        [ValidateNotNull()]
+        [Type]$Prototype
       )
       
       begin {
@@ -27,9 +29,7 @@ function Hide-ConsoleCursor {
         ).GetMethods([Reflection.BindingFlags]40) |
         Where-Object {
           $_.Name -cmatch '\AGet(ProcA|ModuleH)'
-        } | ForEach-Object {
-          Set-Variable $_.Name $_
-        }
+        } | ForEach-Object { Set-Variable $_.Name $_ }
         
         if (($ptr = $GetProcAddress.Invoke($null, @(
           $GetModuleHandle.Invoke($null, @($Module)), $Function
@@ -39,20 +39,24 @@ function Hide-ConsoleCursor {
           )
         }
       }
-      process { $proto = Invoke-Expression $Delegate }
+      process {}
       end {
-        $method = $proto.GetMethod('Invoke')
+        $method = $Prototype.GetMethod('Invoke')
         
         $returntype = $method.ReturnType
         $paramtypes = $method.GetParameters() |
                     Select-Object -ExpandProperty ParameterType
         
         $holder = New-Object Reflection.Emit.DynamicMethod(
-          'Invoke', $returntype, $paramtypes, $proto
+          'Invoke', $returntype, $(
+            if (!$paramtypes) { $null } else { $paramtypes }
+          ), $Prototype
         )
         $il = $holder.GetILGenerator()
-        0..($paramtypes.Length - 1) | ForEach-Object {
-          $il.Emit([Reflection.Emit.OpCodes]::Ldarg, $_)
+        if ($paramtypes) {
+          0..($paramtypes.Length - 1) | ForEach-Object {
+            $il.Emit([Reflection.Emit.OpCodes]::Ldarg, $_)
+          }
         }
         
         switch ([IntPtr]::Size) {
@@ -62,25 +66,25 @@ function Hide-ConsoleCursor {
         $il.EmitCalli(
           [Reflection.Emit.OpCodes]::Calli,
           [Runtime.InteropServices.CallingConvention]::StdCall,
-          $returntype, $paramtypes
+          $returntype, $(if (!$paramtypes) { $null } else { $paramtypes })
         )
         $il.Emit([Reflection.Emit.OpCodes]::Ret)
         
-        $holder.CreateDelegate($proto)
+        $holder.CreateDelegate($Prototype)
       }
     }
     
     $ShowConsoleCursor = New-Delegate kernel32 ShowConsoleCursor `
-                                                '[Action[IntPtr, Boolean]]'
+                                                ([Action[IntPtr, Boolean]])
   }
-  process {
+  process {}
+  end {
     $ShowConsoleCursor.Invoke(
       ([Object].Assembly.GetType(
         'Microsoft.Win32.Win32Native'
       ).GetMethod(
         'GetStdHandle', [Reflection.BindingFlags]40
-      ).Invoke($null, @(-11))), $Show
+      ).Invoke($null, @(-11))), $Cancel
     )
   }
-  end {}
 }
