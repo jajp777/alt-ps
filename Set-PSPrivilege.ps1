@@ -1,77 +1,81 @@
-function Invoke-RtlAdjustPrivilege {
+function Set-PSPrivilege {
   <#
     .SYNOPSIS
         Sets up a privilege for current PowerShell host.
     .EXAMPLE
-        PS C:\> Invoke-RtlAdjustPrivilege
-        
+        PS C:\> Set-PSPrivilege -Enable
         Enable SeShutdownPrivilege.
     .EXAMPLE
-        PS C:\> Invoke-RtlAdjustPrivilege 19 $false
-        
+        PS C:\> Set-PSPrivilege
         Disable SeShutdownPrivilege.
-    .EXAMPLE
-        PS C:\> Invoke-RtlAdjustPrivilege 25
-        
-        Enable SeUndockPrivilege.
+    .NOTES
+        Author: greg zakharov
   #>
   param(
-    [Parameter(Position=0)]
+    [Parameter()]
     [ValidateRange(2, 35)]
-    [UInt32]$Privilege = 19, #SeShutdownPrivilege
-    
-    [Parameter(Position=1)]
-    [Switch]$Enable = $true
+    [UInt32]$Privilege = 19, # SeShutdownPrivilege
+
+    [Parameter()][Switch]$Enable
   )
-  
+
   begin {
-    function private:Get-Delegate {
+    function private:New-Delegate {
       param(
         [Parameter(Mandatory=$true, Position=0)]
         [ValidateNotNullOrEmpty()]
         [String]$Module,
-        
+
         [Parameter(Mandatory=$true, Position=1)]
         [ValidateNotNullOrEmpty()]
         [String]$Function,
-        
+
         [Parameter(Mandatory=$true, Position=2)]
-        [ValidateNotNullOrEmpty()]
-        [String]$Func
+        [ValidateNotNull()]
+        [Type]$Prototype
       )
-      
-      [Regex].Assembly.GetType(
-        'Microsoft.Win32.UnsafeNativeMethods'
-      ).GetMethods() | Where-Object {
-        $_.Name -cmatch '\AGet(ProcA|ModuleH)'
-      } | ForEach-Object {
-        Set-Variable $_.Name $_
-      }
-      
-      try {
-        $ptr = $GetProcAddress.Invoke($null, @(
+
+      begin {
+        [Regex].Assembly.GetType(
+          'Microsoft.Win32.UnsafeNativeMethods'
+        ).GetMethods() | Where-Object {
+          $_.Name -cmatch '\AGet(ProcA|ModuleH)'
+        } | ForEach-Object {
+          Set-Variable $_.Name $_
+        }
+
+        if (($ptr = $GetProcAddress.Invoke($null, @(
           [Runtime.InteropServices.HandleRef](
           New-Object Runtime.InteropServices.HandleRef(
             (New-Object IntPtr),
             $GetModuleHandle.Invoke($null, @($Module))
           )), $Function
-        ))
-        
-        $delegate = Invoke-Expression $Func
-        $method   = $delegate.GetMethod('Invoke')
-        
+        ))) -eq [IntPtr]::Zero) {
+          throw New-Object InvalidOperationException(
+            'Could not find specified signature.'
+          )
+        }
+      }
+      process {}
+      end {
+        $method = $Prototype.GetMethod('Invoke')
+
         $returntype = $method.ReturnType
         $paramtypes = $method.GetParameters() |
-                                     Select-Object -ExpandProperty ParameterType
-        
+                    Select-Object -ExpandProperty ParameterType
+
         $holder = New-Object Reflection.Emit.DynamicMethod(
-          'Invoke', $returntype, $paramtypes, [Delegate]
+          'Invoke', $returntype, $(
+            if (!$paramtypes) { $null } else { $paramtypes }
+          ), $Prototype
         )
         $il = $holder.GetILGenerator()
-        0..($paramtypes.Length - 1) | ForEach-Object {
-          $il.Emit([Reflection.Emit.OpCodes]::Ldarg, $_)
+        if ($paramtypes) {
+          0..($paramtypes.Length - 1) | ForEach-Object {
+            $il.Emit([Reflection.Emit.OpCodes]::Ldarg, $_)
+          }
         }
-        
+
         switch ([IntPtr]::Size) {
           4 { $il.Emit([Reflection.Emit.OpCodes]::Ldc_I4, $ptr.ToInt32()) }
           8 { $il.Emit([Reflection.Emit.OpCodes]::Ldc_I8, $ptr.ToInt64()) }
@@ -79,24 +83,21 @@ function Invoke-RtlAdjustPrivilege {
         $il.EmitCalli(
           [Reflection.Emit.OpCodes]::Calli,
           [Runtime.InteropServices.CallingConvention]::StdCall,
-          $returntype, $paramtypes
+          $returntype, $(if (!$paramtypes) { $null } else { $paramtypes })
         )
         $il.Emit([Reflection.Emit.OpCodes]::Ret)
-      }
-      catch { $_.Exception }
-      finally {
-        if ($holder -ne $null) {
-          Set-Variable $Function $holder.CreateDelegate($delegate) -Scope Script
-        }
+
+        $holder.CreateDelegate($Prototype)
       }
     }
   }
-  process {
-    Get-Delegate ntdll RtlAdjustPrivilege `
-    '[Action[UInt32, Boolean, Boolean, Text.StringBuilder]]'
+  process {}
+  end {
     $enabled = New-Object Text.StringBuilder
-    
-    $RtlAdjustPrivilege.Invoke($Privilege, $Enable, $false, $enabled)
+    if (($nts = (New-Delegate ntdll RtlAdjustPrivilege (
+      [Func[UInt32, Boolean, Boolean, Text.StringBuilder, Int32]]
+    )).Invoke($Privilege, $Enable, $false, $enabled)) -ne 0) {
+      throw New-Object InvalidOperationException('NTSTATUS: {0:X}' -f $nts)
+    }
   }
-  end {}
 }
