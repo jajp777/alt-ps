@@ -24,7 +24,7 @@ function Find-MsiPackage {
   process {
     $packages = $(($mt = $msi.GetType()).InvokeMember(
       'Products', 'GetProperty', $null, $msi, $null
-    ) | ForEach-Object {$packages = @()}{
+    ) | ForEach-Object {
       $names = $mt.InvokeMember(
         'ProductInfo', 'GetProperty', $null, $msi, @(
           [String]$_, 'ProductName'
