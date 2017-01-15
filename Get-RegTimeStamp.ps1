@@ -1,36 +1,37 @@
-function Get-RegModifyTime {
+function Get-RegTimeStamp {
   <#
     .SYNOPSIS
         Retrieves last-modified time stamp of a registry key.
     .EXAMPLE
-        PS C:\> Get-RegModifyTime 'HKCU:\Volatile Environment'
-        
+        PS C:\> Get-RegTimeStamp 'HKCU:\Volatile Environment'
         This example can be interpreted like a last logon time
         of the current user.
+    .NOTES
+        Author: greg zakharov
   #>
   param(
     [Parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
-    [ValidateScript({($script:rk = Get-Item $_ -ea 0) -ne 0})]
+    [ValidateScript({($script:rk = Get-Item $_ -ea 0) -ne $null})]
     [String]$RegistryKey
   )
-  
+
   begin {
-    function private:Set-Delegate {
+    function private:New-Delegate {
       param(
         [Parameter(Mandatory=$true, Position=0)]
         [ValidateNotNullOrEmpty()]
         [String]$Module,
-        
+
         [Parameter(Mandatory=$true, Position=1)]
         [ValidateNotNullOrEmpty()]
         [String]$Function,
-        
+
         [Parameter(Mandatory=$true, Position=2)]
-        [ValidateNotNullOrEmpty()]
-        [String]$Delegate
+        [ValidateNotNull()]
+        [Type]$Prototype
       )
-      
+
       begin {
         [Object].Assembly.GetType(
           'Microsoft.Win32.Win32Native'
@@ -40,31 +41,35 @@ function Get-RegModifyTime {
         } | ForEach-Object {
           Set-Variable $_.Name $_
         }
-        
+
         if (($ptr = $GetProcAddress.Invoke($null, @(
           $GetModuleHandle.Invoke($null, @($Module)), $Function
         ))) -eq [IntPtr]::Zero) {
           throw New-Object InvalidOperationException(
-            'Could not find specified signature.'
+            'Could not finds specified signature.'
           )
         }
       }
-      process { $proto = Invoke-Expression $Delegate }
+      process {}
       end {
-        $method = $proto.GetMethod('Invoke')
-        
+        $method = $Prototype.GetMethod('Invoke')
+
         $returntype = $method.ReturnType
         $paramtypes = $method.GetParameters() |
-                          Select-Object -ExpandProperty ParameterType
-        
+                    Select-Object -ExpandProperty ParameterType
+
         $holder = New-Object Reflection.Emit.DynamicMethod(
-          'Invoke', $returntype, $paramtypes, $proto
+          'Invoke', $returntype, $(
+            if (!$paramtypes) { $null } else { $paramtypes }
+          ), $Prototype
         )
         $il = $holder.GetILGenerator()
-        0..($paramtypes.Length - 1) | ForEach-Object {
-          $il.Emit([Reflection.Emit.OpCodes]::Ldarg, $_)
+        if ($paramtypes) {
+          0..($paramtypes.Length - 1) | ForEach-Object {
+            $il.Emit([Reflection.Emit.OpCodes]::Ldarg, $_)
+          }
         }
-        
+
         switch ([IntPtr]::Size) {
           4 { $il.Emit([Reflection.Emit.OpCodes]::Ldc_I4, $ptr.ToInt32()) }
           8 { $il.Emit([Reflection.Emit.OpCodes]::Ldc_I8, $ptr.ToInt64()) }
@@ -72,23 +77,25 @@ function Get-RegModifyTime {
         $il.EmitCalli(
           [Reflection.Emit.OpCodes]::Calli,
           [Runtime.InteropServices.CallingConvention]::StdCall,
-          $returntype, $paramtypes
+          $returntype, $(if (!$paramtypes) { $null } else { $paramtypes })
         )
         $il.Emit([Reflection.Emit.OpCodes]::Ret)
-        
-        $holder.CreateDelegate($proto)
+
+        $holder.CreateDelegate($Prototype)
       }
     }
-    
-    $RegQueryInfoKey = Set-Delegate advapi32 RegQueryInfoKeyW (
-       '[Func[Microsoft.Win32.SafeHandles.SafeRegistryHandle, ' +
-       'Text.StringBuilder, [Byte[]], UInt32, [Byte[]], [Byte[]], ' +
-       '[Byte[]], [Byte[]], [Byte[]], [Byte[]], [Byte[]], [Byte[]], Int32]]')
+
+    $sig, $ft = ('[Func[Microsoft.Win32.SafeHandles.SafeRegistryHandle, ' +
+      'Text.StringBuilder, [Byte[]], UInt32, [Byte[]], [Byte[]], ' +
+      '[Byte[]], [Byte[]], [Byte[]], [Byte[]], [Byte[]], [Byte[]], Int32]]'
+    ), (New-Object Byte[](8)) # FILETIME
+
+    $RegQueryInfoKey = New-Delegate advapi32 RegQueryInfoKeyW (
+      Invoke-Expression $sig
+    )
   }
   process {
     try {
-      $ft = New-Object Byte[](8) # FILETIME
-      
       if ($RegQueryInfoKey.Invoke(
         $rk.Handle, $null, $null, $null, $null, $null,
         $null, $null, $null, $null, $null, $ft
@@ -97,18 +104,22 @@ function Get-RegModifyTime {
           'Could not retrieve last write time of the key.'
         )
       }
-      
+
       $low, $high = $ft[0..3], $ft[4..7] | ForEach-Object {
         [BitConverter]::ToUInt32($_, 0)
       }
-      
-      [DateTime]::FromFileTime(
-        [Int64]($high * [Math]::Pow(2, 32)) -bor $low
-      ).ToString('dd.MM.yyyy HH:mm:ss')
+
+      $ret = New-Object PSObject -Property @{
+        Key = $rk.Name
+        LastWriteTime = [DateTime]::FromFileTime(
+          [Int64]($high * [Math]::Pow(2, 32)) -bor $low
+        ).ToString('dd.MM.yyyy HH:mm:ss')
+      }
     }
+    catch { Write-Verbose $_ }
     finally {
       if ($rk) { $rk.Dispose() }
     }
   }
-  end {}
+  end { $ret }
 }
