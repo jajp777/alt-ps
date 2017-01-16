@@ -8,110 +8,102 @@ function New-HardLink {
     .PARAMETER Source
         The name of the existing file.
     .PARAMETER Destination
-        The name of the new file.
+        The name of the new file (should be a full path).
+    .EXAMPLE
+        PS C:\Users\Admin> New-HardLink .\Documents\src.c C:\src\target.c
     .OUTPUTS
         If the function succeeds, the return value is $true.
-    .EXAMPLE
-        PS C:\> New-HardLink C:\proj\source.c C:\test\current.c
+    .NOTES
+        Author: greg zakharov
   #>
   param(
     [Parameter(Mandatory=$true, Position=0)]
-    [ValidateScript({Test-Path $_})]
     [ValidateNotNullOrEmpty()]
+    [ValidateScript({Test-Path $_})]
     [String]$Source,
-    
+
     [Parameter(Mandatory=$true, Position=1)]
     [ValidateNotNullOrEmpty()]
     [String]$Destination
   )
-  
+
   begin {
-    @(
-      [Runtime.InteropServices.CallingConvention],
-      [Runtime.InteropServices.HandleRef],
-      [Reflection.Emit.OpCodes]
-    ) | ForEach-Object {
-      $keys = ($ta = [PSObject].Assembly.GetType(
-        'System.Management.Automation.TypeAccelerators'
-      ))::Get.Keys
-      $collect = @()
-    }{
-      if ($keys -notcontains $_.Name) {
-        $ta::Add($_.Name, $_)
-      }
-      $collect += $_.Name
-    }
-    
-    function private:Set-Delegate {
+    function private:New-Delegate {
       param(
         [Parameter(Mandatory=$true, Position=0)]
         [ValidateNotNullOrEmpty()]
         [String]$Module,
-        
+
         [Parameter(Mandatory=$true, Position=1)]
         [ValidateNotNullOrEmpty()]
         [String]$Function,
-        
+
         [Parameter(Mandatory=$true, Position=2)]
-        [ValidateNotNullOrEmpty()]
-        [String]$Delegate
+        [ValidateNotNull()]
+        [Type]$Prototype
       )
-      
+
       begin {
-        [Regex].Assembly.GetType(
-          'Microsoft.Win32.UnsafeNativeMethods'
-        ).GetMethods() | Where-Object {
+        [Object].Assembly.GetType(
+          'Microsoft.Win32.Win32Native'
+        ).GetMethods([Reflection.BindingFlags]40) |
+        Where-Object {
           $_.Name -cmatch '\AGet(ProcA|ModuleH)'
         } | ForEach-Object {
           Set-Variable $_.Name $_
         }
-        
-        $ptr = $GetProcAddress.Invoke($null, @(
-          [HandleRef](New-Object HandleRef(
-            (New-Object IntPtr), $GetModuleHandle.Invoke($null, @($Module))
-          )), $Function
-        ))
+
+        if (($ptr = $GetProcAddress.Invoke($null, @(
+          $GetModuleHandle.Invoke($null, @($Module)), $Function
+        ))) -eq [IntPtr]::Zero) {
+          throw New-Object InvalidOperationException(
+            'Could not find specified signature.'
+          )
+        }
       }
-      process { $proto = Invoke-Expression $Delegate }
+      process {}
       end {
-        $method = $proto.GetMethod('Invoke')
-        
+        $method = $Prototype.GetMethod('Invoke')
+
         $returntype = $method.ReturnType
         $paramtypes = $method.GetParameters() |
-                                        Select-Object -ExpandProperty ParameterType
-        
+                    Select-Object -ExpandProperty ParameterType
+
         $holder = New-Object Reflection.Emit.DynamicMethod(
-          'Invoke', $returntype, $paramtypes, $proto
+          'Invoke', $returntype, $(
+            if (!$paramtypes) { $null } else { $paramtypes }
+          ), $Prototype
         )
         $il = $holder.GetILGenerator()
-        0..($paramtypes.Length - 1) | ForEach-Object {
-          $il.Emit([OpCodes]::Ldarg, $_)
+        if ($paramtypes) {
+          0..($paramtypes.Length - 1) | ForEach-Object {
+            $il.Emit([Reflection.Emit.OpCodes]::Ldarg, $_)
+          }
         }
-        
+
         switch ([IntPtr]::Size) {
-          4 { $il.Emit([OpCodes]::Ldc_I4, $ptr.ToInt32()) }
-          8 { $il.Emit([OpCodes]::Ldc_I8, $ptr.ToInt64()) }
+          4 { $il.Emit([Reflection.Emit.OpCodes]::Ldc_I4, $ptr.ToInt32()) }
+          8 { $il.Emit([Reflection.Emit.OpCodes]::Ldc_I8, $ptr.ToInt64()) }
         }
         $il.EmitCalli(
-          [OpCodes]::Calli, [CallingConvention]::StdCall, $returntype, $paramtypes
+          [Reflection.Emit.OpCodes]::Calli,
+          [Runtime.InteropServices.CallingConvention]::StdCall,
+          $returntype, $(if (!$paramtypes) { $null } else { $paramtypes })
         )
-        $il.Emit([OpCodes]::Ret)
-        
-        $holder.CreateDelegate($proto)
+        $il.Emit([Reflection.Emit.OpCodes]::Ret)
+
+        $holder.CreateDelegate($Prototype)
       }
     }
-    
-    $CreateHardLink = Set-Delegate kernel32 CreateHardLinkW `
-                                      '[Func[[Byte[]], [Byte[]], IntPtr, Boolean]]'
   }
-  process {
-    $CreateHardLink.Invoke(
+  process {}
+  end {
+    (New-Delegate kernel32 CreateHardLinkW (
+      [Func[[Byte[]], [Byte[]], IntPtr, Boolean]]
+    )).Invoke(
       [Text.Encoding]::Unicode.GetBytes($Destination),
-      [Text.Encoding]::Unicode.GetBytes($Source),
+      [Text.Encoding]::Unicode.GetBytes((Convert-Path $Source)),
       [IntPtr]::Zero
     )
-  }
-  end {
-    $collect | ForEach-Object { [void]$ta::Remove($_) }
   }
 }
