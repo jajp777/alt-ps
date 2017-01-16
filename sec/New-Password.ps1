@@ -4,6 +4,8 @@ function New-Password {
         Changes password for specified user.
     .EXAMPLE
         PS C:\> New-Password oldpass newpass Administrator
+    .NOTES
+        Author: greg zakharov
   #>
   param(
     [Parameter(Mandatory=$true, Position=0)]
