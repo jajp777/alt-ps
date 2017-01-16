@@ -46,7 +46,7 @@ function Get-RegTimeStamp {
           $GetModuleHandle.Invoke($null, @($Module)), $Function
         ))) -eq [IntPtr]::Zero) {
           throw New-Object InvalidOperationException(
-            'Could not finds specified signature.'
+            'Could not find specified signature.'
           )
         }
       }
