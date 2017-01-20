@@ -2,62 +2,43 @@ function Get-FileCache {
   <#
     .SYNOPSIS
         Shows basic data about system cache.
+    .NOTES
+        Author: greg zakharov
   #>
   begin {
     Set-Variable ($$ = [Regex].Assembly.GetType(
       'Microsoft.Win32.NativeMethods'
     ).GetMethod('NtQuerySystemInformation')).Name $$
-    
-    $SysInfo = @{
-      Basic = @(0, 44)
-      FileCache = @(21, 36)
-    }
-    
-    if (($ta = [PSObject].Assembly.GetType(
-      'System.Management.Automation.TypeAccelerators'
-    ))::Get.Keys -notcontains 'Marshal') {
-      $ta::Add('Marshal', [Runtime.InteropServices.Marshal])
-    }
-    
-    function private:Get-PageSize {
-      try {
-        $ptr = [Marshal]::AllocHGlobal($SysInfo.Basic[1])
-        
-        if ($NtQuerySystemInformation.Invoke($null, @(
-          $SysInfo.Basic[0], $ptr, $SysInfo.Basic[1], 0
-        )) -eq 0) {
-          [Marshal]::ReadInt32($ptr, 8)
-        }
-      }
-      finally {
-        if ($ptr) { [Marshal]::FreeHGlobal($ptr) }
-      }
-    }
+
+    $page = 4096 # page size
   }
   process {
-    $psz = Get-PageSize
-    
     try {
-      $ptr = [Marshal]::AllocHGlobal($SysInfo.FileCache[1])
-      
-      if ($NtQuerySystemInformation.Invoke($null, @(
-        $SysInfo.FileCache[0], $ptr, $SysInfo.FileCache[1], 0
-      )) -eq 0) {
-        New-Object PSObject -Property @{
-          CurrentSize = [Marshal]::ReadInt32($ptr) / 1Kb
-          PeakSize    = [Marshal]::ReadInt32($ptr, 4) / 1Kb
-          MinimumWS   = [Marshal]::ReadInt32($ptr, 12) * $psz / 1Kb
-          MaximumWS   = [Marshal]::ReadInt32($ptr, 16) * $psz / 1Kb
-        } | Select-Object CurrentSize, PeakSize, MinimumWS, MaximumWS |
-        Format-List
+      $sfi = [Runtime.InteropServices.Marshal]::AllocHGlobal(36)
+
+      if ($NtQuerySystemInformation.Invoke(
+        $null, @(21, $sfi, 36, $null)
+      ) -ne 0) {
+        throw New-Object InvalidOperationException(
+          'Could not retrieve system file cache information.'
+        )
       }
+
+      New-Object PSObject -Property @{
+        CurrentSize = [Runtime.InteropServices.Marshal]::ReadInt32($sfi)
+        PeakSize    = [Runtime.InteropServices.Marshal]::ReadInt32($sfi, 0x04)
+        MinimumWS   = [Runtime.InteropServices.Marshal]::ReadInt32($sfi, 0x0c)
+        MaximumWS   = [Runtime.InteropServices.Marshal]::ReadInt32($sfi, 0x10)
+      } | Select-Object @{
+        N='CurrentSize(KB)';E={$_.CurrentSize / 1Kb}
+      }, @{N='PeakSize(KB)';E={$_.PeakSize / 1Kb}}, @{
+        N='MinimumWS(KB)';E={$_.MinimumWS * $page / 1Kb}
+      }, @{N='MaximumWS(KB)';E={$_.MaximumWS * $page / 1Kb}} | Format-List
     }
-    catch { $_.Exception }
+    catch { Write-Verbose $_ }
     finally {
-      if ($ptr) { [Marshal]::FreeHGlobal($ptr) }
+      if ($sfi) { [Runtime.InteropServices.Marshal]::FreeHGlobal($sfi) }
     }
   }
-  end {
-    [void]$ta::Remove('Marshal')
-  }
+  end {}
 }
