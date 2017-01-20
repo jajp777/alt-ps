@@ -181,4 +181,5 @@ function Get-CoolingMode {
       if ($spi) { [Runtime.InteropServices.Marshal]::FreeHGlobal($spi) }
     }
   }
+  end {}
 }
