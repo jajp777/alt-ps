@@ -4,6 +4,8 @@ function Get-DisplayDevices {
         Gets information about the display devices in the current
         session.
     .NOTES
+        Author: greg zakharov
+
         typedef struct _DISPLAY_DEVICE { // A |      W
           DWORD cb;                 // +0x000 | +0x000
           TCHAR DeviceName[32];     // +0x004 | +0x004
