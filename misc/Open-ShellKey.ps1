@@ -36,6 +36,7 @@ function Open-ShellKey {
         $rk.Dispose()
         $srh.Dispose()
     .NOTES
+        Author: greg zakharov
         Requirements: CLR v4
   #>
   param(
