@@ -3,7 +3,7 @@ function Get-RarContent {
     .SYNOPSIS
         Gets content of a compressed (RAR) file.
     .DESCRIPTION
-        The main goal of this function to not use additionsl binary
+        The main goal of this function to not use additional binary
         files such as WinRAR.exe and etc.
     .NOTES
         Author: greg zakharov
