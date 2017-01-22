@@ -4,6 +4,8 @@ function Out-Notepad {
         Moves host output data to Notepad.
     .EXAMPLE
         PS C:\> Get-ChildItems | Out-String | Out-Notepad
+    .NOTES
+        Author: greg zakharov
   #>
   param(
     [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
@@ -30,12 +32,12 @@ function Out-Notepad {
       $collect += $_.Name
     }
   }
-  process {
+  process {}
+  end {
     $gch = [GCHandle]::Alloc(
       [Encoding]::Unicode.GetBytes($Value), 'Pinned'
     )
-  }
-  end {
+
     $np = Start-Process notepad -PassThru
     [void]$np.WaitForInputIdle()
     
