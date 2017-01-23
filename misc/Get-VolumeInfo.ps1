@@ -16,6 +16,8 @@ function Get-VolumeInfo {
         MountedPoint : \??\Volume{2d771d1c-b94d-11e2-8fc8-002163967079}
         CreationTime : 10.04.2014 13:36:50
     .NOTES
+        Author: greg zakharov
+        
         typedef struct _FILE_FS_VOLUME_INFORMATION {
             LARGE_INTEGER VolumeCreationTime; // +0x00
             ULONG         VolumeSerialNumber; // +0x08
@@ -43,7 +45,7 @@ function Get-VolumeInfo {
         
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [String]$Delegate
+        [Type]$Prototype
       )
       
       begin {
@@ -64,20 +66,24 @@ function Get-VolumeInfo {
           )
         }
       }
-      process { $proto = Invoke-Expression $Delegate }
+      process {}
       end {
-        $method = $proto.GetMethod('Invoke')
+        $method = $Prototype.GetMethod('Invoke')
         
         $returntype = $method.ReturnType
         $paramtypes = $method.GetParameters() |
-                    Select-Object -ExpandProperty ParameterType
+                                Select-Object -ExpandProperty ParameterType
         
         $holder = New-Object Reflection.Emit.DynamicMethod(
-          'Invoke', $returntype, $paramtypes, $proto
+          'Invoke', $returntype, $(
+            if (!$paramtypes) { $null } else { $paramtypes }
+          ), $Prototype
         )
         $il = $holder.GetILGenerator()
-        0..($paramtypes.Length - 1) | ForEach-Object {
-          $il.Emit([Reflection.Emit.OpCodes]::Ldarg, $_)
+        if ($paramtypes) {
+          0..($paramtypes.Length - 1) | ForEach-Object {
+            $il.Emit([Reflection.Emit.OpCodes]::Ldarg, $_)
+          }
         }
         
         switch ([IntPtr]::Size) {
@@ -87,17 +93,17 @@ function Get-VolumeInfo {
         $il.EmitCalli(
           [Reflection.Emit.OpCodes]::Calli,
           [Runtime.InteropServices.CallingConvention]::StdCall,
-          $returntype, $paramtypes
+          $returntype, $(if (!$paramtypes) { $null } else { $paramtypes })
         )
         $il.Emit([Reflection.Emit.OpCodes]::Ret)
         
-        $holder.CreateDelegate($proto)
+        $holder.CreateDelegate($Prototype)
       }
     }
     
     $NtQueryVolumeInformationFile = New-Delegate ntdll `
-      NtQueryVolumeInformationFile (
-      '[Func[IntPtr, [Byte[]], IntPtr, Int32, Int32, Int32]]'
+    NtQueryVolumeInformationFile (
+      [Func[IntPtr, [Byte[]], IntPtr, Int32, Int32, Int32]]
     )
     
     $dev = (
