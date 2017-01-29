@@ -3,6 +3,8 @@ function Get-PSCommandLine {
     .SYNOPSIS
         Gets command line of current PowerShell host.
     .NOTES
+        Author: greg zakharov
+        
         Of course, you can use for this purpose next code:
         
         gwmi Win32_Process | ? {$_.ProcessId -eq $PID} | select -exp CommandLine
@@ -95,11 +97,7 @@ function Get-PSCommandLine {
     }
   }
   end {
-    if ($sph -ne $null) {
-      $sph.Dispose()
-      $sph.Close()
-    }
-    
+    if ($sph -ne $null) {$sph.Dispose() }
     $collect | ForEach-Object { [void]$ta::Remove($_) }
   }
 }
