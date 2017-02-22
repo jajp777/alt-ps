@@ -8,6 +8,18 @@ function Test-Is64BitSystem {
         Win32_OperatingSystem (property OSArchitecture). Alternatively,
         we can use IsWow64ProcessDelegate type stored in
         Microsoft.Build.Tasks.dll assembly.
+    .NOTES
+        Perhaps the easiest way to determine bitness of the system is
+        based on retrieving value of PROCESSOR_ARCHITECTURE variable.
+        In other words,
+           PROCESSOR_ARCHITECTURE -eq wProcessorArchitecture
+        where wProcessorArchitecture is a field of SYSTEM_INFO structure.
+        This field points to the processor architecture of the installed
+        operating system.
+
+        if ([Int32](-join [Environment]::GetEnvironmentVariable(
+          'PROCESSOR_ARCHITECTURE', 'Machine'
+        )[-2..-1]) -ne 64) { '32bit' } else { '64bit' }
   #>
   begin {
     @(
