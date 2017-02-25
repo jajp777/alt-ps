@@ -5,6 +5,14 @@
   .NOTES
       Author: greg zakharov
       Requirements: Ruby 2.X stored into $env:path
+
+      By the way, this method fully compatible with Perl.
+      For example:
+        perl -x $MyInvocation.MyCommand.Path $args
+        <#
+        #!perl
+        foreach my $i (@ARGV) {print $i, "\n";}
+        #>
 #>
 ruby -x $MyInvocation.MyCommand.Path $args
 <#
