@@ -54,9 +54,9 @@ function Get-ProcessTree {
         $par = [Object[]]@(5, $ptr, 1024, $ret)
       )) -eq 0xC0000004) { # STATUS_INFO_LENGTH_MISMATCH
         $ptr = [Marshal]::ReAllocHGlobal($ptr, [IntPtr]$par[3])
-        if (($nts = $NtQuerySystemInformation.Invoke($null, (
-          $par = [Object[]]@(5, $ptr, $par[3], 0)
-        ))) -ne 0) {
+        if (($nts = $NtQuerySystemInformation.Invoke($null,
+          @(5, $ptr, $par[3], 0)
+        )) -ne 0) {
           throw New-Object InvalidOperationException(
             'NTSTATUS: 0x{0:X}' -f $nts
           )
